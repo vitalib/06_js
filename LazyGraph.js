@@ -27,7 +27,6 @@ class LazyGraph {
             throw new DependencyNotFoundError(`Dependent function "${vertex}" is not in a graph`);
         }
         visited.add(vertex);
-        parents = this.getParents(this.graph[vertex]);
         for (let parent of parents)  {
             if (!this.dependencies.has(parent)) {
                 if (visited.has(parent)) {
