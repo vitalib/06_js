@@ -1,3 +1,6 @@
+class CircularDependencyError extends Error {}
+class DependencyNotFoundError extends Error{}
+
 class EagerGraph {
     receiveGraph(graph) {
         this.graph = graph;
@@ -7,12 +10,19 @@ class EagerGraph {
         return this.solution;
     }
 
-    
-
     getDependencies() {
+        let funcs = new Set();
+        for (let key of Object.keys(this.graph)) {
+            funcs.add(key);
+        }
         let dependencies = new Map();
         for (let key of Object.keys(this.graph)) {
             let parents = this.getParents(this.graph[key]);
+            for (let parent of parents) {
+                if (!funcs.has(parent)){
+                    throw new DependencyNotFoundError(`Dependecy "${parent} is not found`);
+                }
+            }
             dependencies.set(key, parents);
         }
        return dependencies;
@@ -35,7 +45,7 @@ class EagerGraph {
                 }
             }
             if (!nextFunc) {
-               throw new Error("Circular dependencies");
+               throw new CircularDependencyError("Circular dependencies found");
             } else {
                 orderOfCalls.push(nextFunc);
                 allFunctions.delete(nextFunc);
@@ -66,29 +76,19 @@ class EagerGraph {
     }
 }
 
+
 function isEquivalent(a, b) {
-    // Create arrays of property names
     let aProps = Object.getOwnPropertyNames(a);
     let bProps = Object.getOwnPropertyNames(b);
-
-    // If number of properties is different,
-    // objects are not equivalent
     if (aProps.length != bProps.length) {
         return false;
     }
-
     for (let i = 0; i < aProps.length; i++) {
         let propName = aProps[i];
-
-        // If values of same property are not equal,
-        // objects are not equivalent
         if (a[propName] !== b[propName]) {
             return false;
         }
     }
-
-    // If we made it this far, objects
-    // are considered equivalent
     return true;
 }
 
@@ -96,7 +96,7 @@ function test() {
     let graphs = [
         {
             graph: {z: (x) => x * 3, x: (y) => y + 1, y: () => 5},
-            answer: {y: 5, x: 6, z: 18}
+            answer: {y: 5, x: 6, z: 18},
         },
         {
             graph: {x: () => 5},
@@ -114,16 +114,33 @@ function test() {
             graph: {x: (y, z, w) => y + z * w, y: () => 1, z: () => 2, w: () => 3},
             answer: {x: 7, y: 1, z: 2, w: 3},
         },
+
+        {
+            graph: {x: (y, z, w) => y + z * w, y: () => 1, z: () => 2, w: (x) => x + 3},
+            answer: {x: 7, y: 1, z: 2, w: 3},
+            err: (new CircularDependencyError()),
+        },
+        {
+            graph: {x: (y, z, w) => y + z * w, y: () => 1, z: () => 2, w: (k) => k + 3, l: () => 10},
+            answer: {x: 7, y: 1, z: 2, w: 3},
+            err: (new DependencyNotFoundError()),
+
+        },
     ];
 
     for (let aGraph of graphs) {
-        let result = (new EagerGraph().receiveGraph(aGraph.graph));
-        if (!isEquivalent(result, aGraph.answer)) {
-            throw new Error(`Expected: ${JSON.stringify(aGraph.answer)}, but got ${JSON.stringify(result)}`);
+        try {
+            let result = (new EagerGraph().receiveGraph(aGraph.graph));
+            if (!isEquivalent(result, aGraph.answer)) {
+                throw new Error(`Expected: ${JSON.stringify(aGraph.answer)}, but got ${JSON.stringify(result)}`);
+            }
+        } catch (e) {
+            if (!aGraph.hasOwnProperty("err") || e.constructor != aGraph.err.constructor) {
+                throw e;
+            }
         }
+
     }
-    console.log("All tests are passed")
+    console.log("EagerGraph - All tests are passed")
 }
-
-
 test();
