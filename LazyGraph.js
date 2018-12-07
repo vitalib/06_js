@@ -83,6 +83,7 @@ function test() {
             graph: {x: (y, z) => y + z, y: () => 5, z: () => 10},
             answer: {x: 15, y: 5, z: 10}
         },
+
     ];
 
     for (let aGraph of graphs) {
@@ -114,9 +115,19 @@ function testDependencyNotFound() {
     let result = (new LazyGraph().receiveGraph(aGraph.graph)).calcVertex('z');
 }
 
+function testIncorrecCallArgument() {
+    let aGraph = {
+        graph: {z: (x) => x * 3, x: (y) => y + 1, y: () => 5},
+    }
+    let result = (new LazyGraph().receiveGraph(aGraph.graph)).calcVertex('k');
+
+}
+
 (function testAll() {
     testFunctions = [{test: test}, {test: testCircularDependency, err: new CircularDependencyError()},
-        {test: testDependencyNotFound, err: new DependencyNotFoundError()}]
+        {test: testDependencyNotFound, err: new DependencyNotFoundError()},
+        {test: testIncorrecCallArgument, err: new DependencyNotFoundError()},
+    ]
     for (let func of testFunctions) {
         try {
             func.test();

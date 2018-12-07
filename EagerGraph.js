@@ -126,6 +126,10 @@ function test() {
             err: (new DependencyNotFoundError()),
 
         },
+        {
+            graph: {},
+            answer: {},
+        },
     ];
 
     for (let aGraph of graphs) {
