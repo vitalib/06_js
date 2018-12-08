@@ -43,7 +43,7 @@ class LazyGraph extends Graph{
     }
 
     getSolution(vertex) {
-        let value = this.graph[vertex](...this.dependencies.get(vertex).map(n => this.calcVertex(n)));
+        const value = this.graph[vertex](...this.dependencies.get(vertex).map(n => this.calcVertex(n)));
         this.solution.set(vertex, value);
     }
 }
